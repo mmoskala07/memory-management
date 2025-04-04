@@ -63,17 +63,32 @@ public:
     // Moving is allowed and it means:
     //   * Copying original pointers to a new object
     //   * Setting source pointer to nullptr
-    shared_ptr(shared_ptr&& other) {
-        obj_ptr = other.obj_ptr;
-        control_block_ptr = other.control_block_ptr;
+    shared_ptr(shared_ptr&& other)
+        : obj_ptr(other.obj_ptr), control_block_ptr(other.control_block_ptr) {
         other.obj_ptr = nullptr;
         other.control_block_ptr = nullptr;
     }
     shared_ptr& operator=(shared_ptr&& other) {
+        if (control_block_ptr) {
+            control_block_ptr->shared_refs--;
+            if (0 == control_block_ptr->shared_refs) {
+                if (control_block_ptr->deleter) {
+                    control_block_ptr->deleter(obj_ptr);
+                } else {
+                    delete obj_ptr;
+                }
+                if (0 == control_block_ptr->weak_refs) {
+                    delete control_block_ptr;
+                }
+            }
+        }
+
         obj_ptr = other.obj_ptr;
         control_block_ptr = other.control_block_ptr;
+
         other.obj_ptr = nullptr;
         other.control_block_ptr = nullptr;
+
         return *this;
     }
 
@@ -100,7 +115,7 @@ public:
     T* get() {
         return obj_ptr;
     }
-    
+
     void reset(T* new_ptr = nullptr) {
         if (obj_ptr != new_ptr) {
             if (control_block_ptr) {
