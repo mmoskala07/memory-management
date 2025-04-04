@@ -21,16 +21,7 @@ private:
     };
     ControlBlock* control_block_ptr;
 
-public:
-    // Constructor: copies a pointer and allocate the control block
-    shared_ptr(T* pointer = nullptr) {
-        obj_ptr = pointer;
-        control_block_ptr = new ControlBlock();
-    }
-    // Destructor: decrease shared_refs and:
-    // - if shared_refs == 0 -> release the managed object
-    // - if shared_refs == 0 and weak_refs == 0 -> release the control block
-    ~shared_ptr() {
+    void remove_this_pointer() {
         if (control_block_ptr) {
             control_block_ptr->shared_refs--;
             if (0 == control_block_ptr->shared_refs) {
@@ -45,19 +36,31 @@ public:
             }
         }
     }
+
+public:
+    // Constructor: copies a pointer and allocate the control block
+    shared_ptr(T* pointer = nullptr) {
+        obj_ptr = pointer;
+        control_block_ptr = new ControlBlock();
+    }
+    // Destructor: decrease shared_refs and:
+    // - if shared_refs == 0 -> release the managed object
+    // - if shared_refs == 0 and weak_refs == 0 -> release the control block
+    ~shared_ptr() {
+        remove_this_pointer();
+    }
     // Copying is allowed - it increments shared_refs
     shared_ptr(const shared_ptr& other) {
         obj_ptr = other.obj_ptr;
-
-        other.control_block_ptr->shared_refs++;
         control_block_ptr = other.control_block_ptr;
+        other.control_block_ptr->shared_refs++;
     }
     shared_ptr& operator=(const shared_ptr& other) {
+        remove_this_pointer();
         obj_ptr = other.obj_ptr;
-
-        other.control_block_ptr->shared_refs++;
         control_block_ptr = other.control_block_ptr;
-
+        if (control_block_ptr)
+            control_block_ptr->shared_refs++;
         return *this;
     }
     // Moving is allowed and it means:
@@ -69,19 +72,7 @@ public:
         other.control_block_ptr = nullptr;
     }
     shared_ptr& operator=(shared_ptr&& other) {
-        if (control_block_ptr) {
-            control_block_ptr->shared_refs--;
-            if (0 == control_block_ptr->shared_refs) {
-                if (control_block_ptr->deleter) {
-                    control_block_ptr->deleter(obj_ptr);
-                } else {
-                    delete obj_ptr;
-                }
-                if (0 == control_block_ptr->weak_refs) {
-                    delete control_block_ptr;
-                }
-            }
-        }
+        remove_this_pointer();
 
         obj_ptr = other.obj_ptr;
         control_block_ptr = other.control_block_ptr;
@@ -118,19 +109,7 @@ public:
 
     void reset(T* new_ptr = nullptr) {
         if (obj_ptr != new_ptr) {
-            if (control_block_ptr) {
-                control_block_ptr->shared_refs--;
-                if (0 == control_block_ptr->shared_refs) {
-                    if (control_block_ptr->deleter) {
-                        control_block_ptr->deleter(obj_ptr);
-                    } else {
-                        delete obj_ptr;
-                    }
-                    if (0 == control_block_ptr->weak_refs) {
-                        delete control_block_ptr;
-                    }
-                }
-            }
+            remove_this_pointer();
             obj_ptr = new_ptr;
             if (new_ptr) {
                 control_block_ptr = new ControlBlock();
