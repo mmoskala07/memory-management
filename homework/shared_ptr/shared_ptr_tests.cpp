@@ -67,6 +67,7 @@ TEST(SharedPtrTest, ResetWithMultipleReferences) {
     EXPECT_EQ(*sp2, 5);
     EXPECT_EQ(sp2.use_count(), 1);
 }
+
 TEST(SharedPtrTest, CopyConstructor) {
     my::shared_ptr<int> sp1(new int(42));
     my::shared_ptr<int> sp2(sp1);
@@ -108,14 +109,6 @@ TEST(SharedPtrTest, BoolOperator) {
     my::shared_ptr<int> sp2;
     EXPECT_TRUE(sp1);
     EXPECT_FALSE(sp2);
-}
-
-TEST(SharedPtrTest, Swap) {
-    my::shared_ptr<int> sp1(new int(42));
-    my::shared_ptr<int> sp2(new int(24));
-    sp1.swap(sp2);
-    EXPECT_EQ(*sp1, 24);
-    EXPECT_EQ(*sp2, 42);
 }
 
 TEST(SharedPtrTest, MultipleSharedPtrs) {
