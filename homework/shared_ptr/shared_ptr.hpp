@@ -88,15 +88,19 @@ public:
     T& operator*() {
         return *obj_ptr;
     }
+
     T* operator->() {
         return obj_ptr;
     }
+
     explicit operator bool() const {
         return obj_ptr != nullptr;
     }
+
     T* get() {
         return obj_ptr;
     }
+    
     void reset(T* new_ptr = nullptr) {
         if (obj_ptr != new_ptr) {
             if (control_block_ptr) {
